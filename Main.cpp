@@ -277,7 +277,7 @@ int main()
     //glDeleteProgram(shaderProgram);
     
     // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
+    // -----------------------------------------------------------------
     glfwDestroyWindow(window);
     glfwTerminate();
     exit(EXIT_SUCCESS);
