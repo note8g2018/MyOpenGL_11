@@ -72,17 +72,16 @@ int main()
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
-        // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+        // positions          // texture coords
+         0.5f,  0.5f, 0.0f,   1.0f, 1.0f, // top right
+         0.5f, -0.5f, 0.0f,   1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f  // top left 
     };
     unsigned int indices[] = {
         0, 1, 3, // first triangle
         1, 2, 3  // second triangle
     };
-
     unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -97,14 +96,12 @@ int main()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*) 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) 0);
     glEnableVertexAttribArray(0);
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*) (3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
     // texture coord attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*) (6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*) (3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
 
     // load and create a texture 
     // -------------------------
@@ -163,21 +160,12 @@ int main()
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     // -------------------------------------------------------------------------------------------
     ourShader.use(); // don't forget to activate/use the shader before setting uniforms!
-    // either set it manually like so:
-    glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0);
-    // or set it via the texture class
+    ourShader.setInt("texture1", 0);
     ourShader.setInt("texture2", 1);
 
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    int nrAttributes;
-    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-    cout << "Maximum nr of vertex attributes supported: " << nrAttributes << endl;
-
     
-    //ourShader.setFloat("horizontal_offset", 0.5f);
-
-
     // render loop
     // -----------
     while(!glfwWindowShouldClose(window))
@@ -198,61 +186,28 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
 
-        // set the texture mix value in the shader
-        ourShader.setFloat("mixValue", mixValue);
-
-
-
-        // render container
+        // activate shader
         ourShader.use();
 
-        glm::mat4 trans = glm::mat4(1.0f);
-        //trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
-        //trans = glm::rotate(trans, (float) glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-        trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
-        //trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0, 0.0, 1.0));
-        trans = glm::rotate(trans, (float) glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
-        //trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
-        unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+        // create transformations
+        glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+        glm::mat4 view = glm::mat4(1.0f);
+        glm::mat4 projection = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        projection = glm::perspective(glm::radians(45.0f), (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+        // retrieve the matrix uniform locations
+        unsigned int modelLoc = glGetUniformLocation(ourShader.ID, "model");
+        unsigned int viewLoc = glGetUniformLocation(ourShader.ID, "view");
+        // pass them to the shaders (3 different ways)
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+        // note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
+        ourShader.setMat4("projection", projection);
 
-        
-
+        // render container
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        trans = glm::mat4(1.0f);
-        trans = glm::translate(trans, glm::vec3(-0.5f, 0.5f, 0.0f));
-        float scaleAmount = sin( (float)glfwGetTime() );
-        trans = glm::scale(trans, glm::vec3(scaleAmount, scaleAmount, 0.5f));
-        //trans = glm::rotate(trans, (float) glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-        glm::mat4 view = glm::mat4(1.0f);
-        // note that we're translating the scene in the reverse direction of where we want to move
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-        int viewLoc = glGetUniformLocation(ourShader.ID, "view");
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-
-        glm::mat4 projection;
-        projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-        int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-        
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        /*glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
-        glm::mat4 trans = glm::mat4(1.0f);
-        trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
-        vec = trans * vec;
-        std::cout << vec.x << vec.y << vec.z << std::endl;*/
         
 
         // glfw: swap buffers and poll IO events (keys pressed/released, 
