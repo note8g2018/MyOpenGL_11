@@ -31,19 +31,17 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="3.3.shader.vs">
+    <CopyFileToFolders Include="3.3.shader.fs">
       <Filter>Resource Files</Filter>
-    </None>
-    <None Include="3.3.shader.fs">
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="3.3.shader.vs">
       <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="container.jpg">
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="container.jpg">
       <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="awesomeface.png">
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="awesomeface.png">
       <Filter>Resource Files</Filter>
-    </Image>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>
