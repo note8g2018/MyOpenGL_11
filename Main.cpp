@@ -260,7 +260,7 @@ int main()
             float angle = 20.0f * i;
             if(i % 3 == 0)
             {
-                angle = 90.0f* sin( (float) glfwGetTime());
+                angle = 90.0f * sin( (float) glfwGetTime());
             }
             model = glm::rotate(model, glm::radians(angle),
                 glm::vec3(1.0f, 0.3f, 0.5f));
