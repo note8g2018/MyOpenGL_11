@@ -39,7 +39,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    
+
     // glfw window creation
     // --------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT,
@@ -51,7 +51,7 @@ int main()
         exit(EXIT_FAILURE);
         //return -1;
     }
-    glfwMakeContextCurrent(window);    
+    glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // glad: load all OpenGL function pointers
@@ -63,8 +63,8 @@ int main()
     }
     cout << "OpenGL Version: " << glGetString(GL_VERSION) << endl;
 
-    
-    
+
+
     // build and compile our shader program
     // ------------------------------------
     Shader ourShader("3.3.shader.vs", "3.3.shader.fs");
@@ -221,7 +221,7 @@ int main()
     glm::vec3(1.5f,  0.2f, -1.5f),
     glm::vec3(-1.3f,  1.0f, -1.5f)
     };
-    
+
     // render loop
     // -----------
     while(!glfwWindowShouldClose(window))
@@ -244,16 +244,16 @@ int main()
 
         // activate shader
         ourShader.use();
-        ourShader.setFloat("mixValue",mixValue);
+        ourShader.setFloat("mixValue", mixValue);
 
         // camera/view transformation
         glm::mat4 view = glm::mat4(1.0f);
         float radius = 10.0f;
         float camX = sin(glfwGetTime()) * radius;
         float camZ = cos(glfwGetTime()) * radius;
-        view = glm::lookAt( glm::vec3(camZ, 0.0, camX),
-                            glm::vec3(0.0f, 0.0f, 0.0f),
-                            glm::vec3(0.0f, 1.0f, 0.0f));
+        view = glm::lookAt(glm::vec3(camZ, 0.0, camX),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 1.0f, 0.0f));
         ourShader.setMat4("view", view);
 
         // render container
@@ -265,7 +265,7 @@ int main()
             float angle = 20.0f * i;
             if(i % 3 == 0)
             {
-                angle = 90.0f * sin( (float) glfwGetTime());
+                angle = 90.0f * sin((float) glfwGetTime());
             }
             model = glm::rotate(model, glm::radians(angle),
                 glm::vec3(1.0f, 0.3f, 0.5f));
@@ -286,7 +286,7 @@ int main()
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
     //glDeleteProgram(shaderProgram);
-    
+
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // -----------------------------------------------------------------
     glfwDestroyWindow(window);
