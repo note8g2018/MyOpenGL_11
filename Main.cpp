@@ -16,6 +16,8 @@ using namespace std;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -23,6 +25,18 @@ const unsigned int SCR_HEIGHT = 600;
 
 // stores how much we're seeing of either texture
 float mixValue = 0.2f;
+
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 9.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+float deltaTime = 0.0f;	// Time between current frame and last frame
+float lastFrame = 0.0f; // Time of last frame
+float lastX = 400;
+float lastY = 300;
+float yaw = -90.0f;
+float pitch = 0.0f;
+bool firstMouse = true;
+float fov = 45.0f;
 
 int main()
 {
@@ -53,6 +67,12 @@ int main()
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+
+    // tell GLFW to capture our mouse
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -62,7 +82,6 @@ int main()
         return -1;
     }
     cout << "OpenGL Version: " << glGetString(GL_VERSION) << endl;
-
 
 
     // build and compile our shader program
@@ -199,12 +218,6 @@ int main()
     ourShader.setInt("texture1", 0);
     ourShader.setInt("texture2", 1);
 
-    // pass projection matrix to shader (as projection matrix rarely changes there's no need to do this per frame)
-    // -----------------------------------------------------------------------------------------------------------
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f),
-        (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
-    ourShader.setMat4("projection", projection);
-
     // uncomment this call to draw in wireframe polygons.
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
@@ -222,10 +235,17 @@ int main()
     glm::vec3(-1.3f,  1.0f, -1.5f)
     };
 
+    
+
     // render loop
     // -----------
     while(!glfwWindowShouldClose(window))
     {
+        // per-frame time logic
+        // --------------------
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
         // input
         // -----
         processInput(window);
@@ -246,14 +266,17 @@ int main()
         ourShader.use();
         ourShader.setFloat("mixValue", mixValue);
 
+        // pass projection matrix to shader (note that in this case it could change every frame)
+        glm::mat4 projection = glm::perspective(glm::radians(fov),
+            (float) SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+        ourShader.setMat4("projection", projection);
+
         // camera/view transformation
         glm::mat4 view = glm::mat4(1.0f);
-        float radius = 10.0f;
-        float camX = sin(glfwGetTime()) * radius;
-        float camZ = cos(glfwGetTime()) * radius;
-        view = glm::lookAt( glm::vec3(camZ, 0.0, 9.0),
-                            glm::vec3(0.0f, 0.0f, 0.0f),
-                            glm::vec3(0.0f, 1.0f, 0.0f));
+        //const float radius = 10.0f;
+        //float camX = sin(glfwGetTime()) * radius;
+        //float camZ = cos(glfwGetTime()) * radius;
+        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         ourShader.setMat4("view", view);
 
         // render container
@@ -317,6 +340,16 @@ void processInput(GLFWwindow* window)
         if(mixValue <= 0.0f)
             mixValue = 0.0f;
     }
+
+    float cameraSpeed = 2.5f * deltaTime; // adjust accordingly
+    if(glfwGetKey(window, GLFW_KEY_W) || glfwGetKey(window, GLFW_KEY_KP_8) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraFront;
+    if(glfwGetKey(window, GLFW_KEY_S) || glfwGetKey(window, GLFW_KEY_KP_5) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraFront;
+    if(glfwGetKey(window, GLFW_KEY_A) || glfwGetKey(window, GLFW_KEY_KP_4) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if(glfwGetKey(window, GLFW_KEY_D) || glfwGetKey(window, GLFW_KEY_KP_6) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) 
@@ -328,4 +361,47 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    cout << xpos << " " << ypos << endl;
+    if(firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.1f;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw += xoffset;
+    pitch += yoffset;
+
+    if(pitch > 89.0f)
+        pitch = 89.0f;
+    if(pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    direction.y = sin(glm::radians(pitch));
+    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(direction);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    fov -= (float) yoffset;
+    if(fov < 1.0f)
+        fov = 1.0f;
+    if(fov > 45.0f)
+        fov = 45.0f;
 }
